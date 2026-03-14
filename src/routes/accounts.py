@@ -292,7 +292,7 @@ async def request_password_reset_token(
     background_tasks.add_task(
         notificator.send_password_reset_email,
         str(user.email),
-        f"{api_url}reset-password/complete/"
+        f"{api_url}reset-password/complete/?token={reset_token.token}"
     )
 
     return MessageResponseSchema(

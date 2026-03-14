@@ -51,6 +51,7 @@ async def test_create_user_profile_with_fake_s3(
     }
 
     response = await client.post(profile_url, headers=headers, files=files)
+    # print(user.profile)
     assert response.status_code == 201, f"Expected 201, got {response.status_code}"
     profile_data = response.json()
 

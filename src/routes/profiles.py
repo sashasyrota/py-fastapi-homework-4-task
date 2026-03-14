@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from config import get_s3_storage_client, get_jwt_auth_manager
-from database.models.accounts import UserProfileModel
+from database.models.accounts import UserProfileModel, GenderEnum
 from exceptions import TokenExpiredError, InvalidTokenError, S3FileUploadError
 from routes.accounts import get_user_by_id
 from schemas.profiles import ProfileResponseSchema, ProfileRequestSchema
@@ -57,14 +57,14 @@ async def create_profile(
         current_user = await get_user_by_id(user_jwt["user_id"], db)
         query_user = await get_user_by_id(user_id, db)
 
+        if not query_user or not query_user.is_active:
+            raise HTTPException(status_code=401, detail="User not found or not active.")
+
         if query_user.profile:
             raise HTTPException(status_code=400, detail="User already has a profile.")
 
         if current_user.id != user_id and current_user.group_id == 1:
             raise HTTPException(status_code=403, detail="You don't have permission to edit this profile.")
-
-        if not query_user or not query_user.is_active:
-            raise HTTPException(status_code=401, detail="User not found or not active.")
 
         try:
             avatar_bytes = avatar.file.read()
@@ -75,7 +75,7 @@ async def create_profile(
             profile_db = UserProfileModel(
                 first_name=first_name.lower(),
                 last_name=last_name.lower(),
-                gender=gender,
+                gender=GenderEnum(gender),
                 date_of_birth=date_of_birth,
                 info=info,
                 avatar=file_name,
@@ -92,4 +92,4 @@ async def create_profile(
     except TokenExpiredError:
         raise HTTPException(status_code=401, detail="Token has expired.")
     except InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token has invalid")
+        raise HTTPException(status_code=401, detail="Invalid token")

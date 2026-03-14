@@ -89,7 +89,7 @@ class UserModel(Base):
         "UserProfileModel",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="joined"
+        lazy="selectin"
     )
 
     def __repr__(self):

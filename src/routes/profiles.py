@@ -1,8 +1,10 @@
 from datetime import date
 
+from PIL import Image
 from fastapi import APIRouter, Form, UploadFile, File, Depends, HTTPException
 from typing import Annotated
 
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -49,7 +51,7 @@ async def create_profile(
             info=info,
             avatar=avatar
         )
-    except Exception as exc:
+    except ValidationError as exc:
         raise HTTPException(status_code=422, detail=exc.errors()[0]["msg"])
     try:
         decoded_auth_header = access_token.split()
@@ -67,11 +69,11 @@ async def create_profile(
             raise HTTPException(status_code=403, detail="You don't have permission to edit this profile.")
 
         try:
+            avatar.file.seek(0)
             avatar_bytes = avatar.file.read()
-            file_name = f"avatars/{user_id}_avatar.jpg"
-            await s3_client.upload_file(file_name, avatar_bytes)
-
-            avatar_url = await s3_client.get_file_url(file_name)
+            image = Image.open(avatar.file)
+            image_format = image.format
+            file_name = f"avatars/{user_id}_avatar.{image_format.lower()}"
             profile_db = UserProfileModel(
                 first_name=first_name.lower(),
                 last_name=last_name.lower(),
@@ -81,6 +83,9 @@ async def create_profile(
                 avatar=file_name,
                 user=query_user
             )
+            await s3_client.upload_file(file_name, avatar_bytes)
+            avatar_url = await s3_client.get_file_url(file_name)
+
             db.add(profile_db)
             await db.commit()
             profile_db.avatar = avatar_url

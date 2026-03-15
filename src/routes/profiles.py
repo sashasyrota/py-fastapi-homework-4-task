@@ -72,8 +72,10 @@ async def create_profile(
             avatar.file.seek(0)
             avatar_bytes = avatar.file.read()
             image = Image.open(avatar.file)
-            image_format = image.format
-            file_name = f"avatars/{user_id}_avatar.{image_format.lower()}"
+            image_format = image.format.lower()
+            if image_format == "jpeg":
+                image_format = "jpg"
+            file_name = f"avatars/{user_id}_avatar.{image_format}"
             profile_db = UserProfileModel(
                 first_name=first_name.lower(),
                 last_name=last_name.lower(),

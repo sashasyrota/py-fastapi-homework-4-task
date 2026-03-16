@@ -22,7 +22,6 @@ router = APIRouter()
 
 @router.post(
     "/users/{user_id}/profile/",
-    # response_model=TokenRefreshResponseSchema,
     summary="Create user profile",
     description="Creation user profile with adding avatar",
     response_model=ProfileResponseSchema,
